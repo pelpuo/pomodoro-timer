@@ -62,17 +62,10 @@ class _HomeState extends State<Home> {
         elevation: 0,
         items: const [
           BottomNavigationBarItem(
-              icon: Icon(Icons.access_time_outlined),
-              label: "timer",
-              backgroundColor: Colors.red),
+              icon: Icon(Icons.access_time_outlined), label: "timer"),
+          BottomNavigationBarItem(icon: Icon(Icons.tune), label: "settings"),
           BottomNavigationBarItem(
-              icon: Icon(Icons.tune),
-              label: "settings",
-              backgroundColor: Colors.green),
-          BottomNavigationBarItem(
-              icon: Icon(Icons.info_outline_rounded),
-              label: "info",
-              backgroundColor: Colors.blue),
+              icon: Icon(Icons.info_outline_rounded), label: "info"),
         ],
         onTap: (index) {
           setState(() {

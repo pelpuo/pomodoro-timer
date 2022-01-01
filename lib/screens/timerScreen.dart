@@ -1,6 +1,9 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:percent_indicator/circular_percent_indicator.dart';
 import 'package:pomodoro/widgets/progress_icons.dart';
+import 'package:intl/intl.dart';
 
 class timerScreen extends StatefulWidget {
   const timerScreen({Key? key}) : super(key: key);
@@ -10,38 +13,169 @@ class timerScreen extends StatefulWidget {
 }
 
 class _timerScreenState extends State<timerScreen> {
-  String stateText = "Work time";
-  String remainingTime = "18:59";
-  int currentSection = 3;
-  int totalSections = 8;
+  String stateText = "Start timer";
 
-  bool timerRunning = false;
+  var f = NumberFormat("00");
+
   Color sprintColor = const Color(0xFFDA4834);
   Icon playStateIcon = const Icon(
     Icons.play_arrow_outlined,
     size: 35,
   );
 
-  void timerFlowChange() {
+  int workTime = 1;
+  int shortBreak = 1;
+  int longBreak = 1;
+  int sections = 4;
+  bool timerRunning = false;
+
+  int totalTime = 0;
+  int curTime = 0;
+  int curTotalTime = 0;
+  int minutes = 0;
+  int seconds = 0;
+  double focusPercentage = 1;
+  double totalPercentage = 1;
+  Timer? timer;
+
+  List<int> sprints = [];
+  List<String> stateTexts = [];
+  int sprintIndex = 0;
+
+  @override
+  void initState() {
+    // TODO: implement initState
+    super.initState();
+
     setState(() {
-      if (!timerRunning) {
-        sprintColor = const Color(0xFF34DADA);
-        stateText = "Work time";
+      for (int i = 0; i < sections; i++) {
+        sprints.add(workTime);
+        stateTexts.add("Work time");
+        totalTime += workTime;
+        if (i != sections - 1) {
+          sprints.add(shortBreak);
+          stateTexts.add("Short break");
+          totalTime += shortBreak;
+        }
+      }
+      sprints.add(longBreak);
+      stateTexts.add("Long break");
+      totalTime += longBreak;
+      curTotalTime = totalTime * 60;
+
+      curTime = sprints[0] * 60;
+
+      minutes = (curTime / 60).floor();
+      seconds = curTime % 60;
+      focusPercentage = (curTime / 60) / sprints[0];
+      totalPercentage = (curTotalTime / 60) / totalTime;
+    });
+  }
+
+  void timerFlowChange() {
+    // Pause to start
+    if (!timerRunning) {
+      timer = Timer.periodic(Duration(seconds: 1), (_) {
+        controlTime();
+      });
+
+      setState(() {
+        if (sprintIndex % 2 == 0 && sprintIndex != sections * 2 - 1) {
+          sprintColor = const Color(0xFF34DADA);
+        } else {
+          sprintColor = Color(0xFFDAAC34);
+        }
+
+        stateText = stateTexts[sprintIndex];
         playStateIcon = const Icon(
           Icons.pause_outlined,
           size: 35,
         );
-      } else {
+      });
+    } else {
+      //Start to pause
+      timer?.cancel();
+      setState(() {
         sprintColor = const Color(0xFFDA4834);
         stateText = "Paused";
         playStateIcon = const Icon(
           Icons.play_arrow_outlined,
           size: 35,
         );
-      }
+      });
+    }
 
+    setState(() {
       timerRunning = !timerRunning;
     });
+  }
+
+  void controlTime() {
+    if (curTime > 0) {
+      setState(() {
+        curTime--;
+        curTotalTime--;
+        setTimerVals();
+      });
+    } else if (curTime <= 0 && sprintIndex < sections * 2 - 1) {
+      setState(() {
+        sprintIndex++;
+        curTime = sprints[sprintIndex] * 60;
+        stateText = stateTexts[sprintIndex];
+
+        if (stateTexts[sprintIndex] == "Work time") {
+          sprintColor = const Color(0xFF34DADA);
+        } else {
+          sprintColor = Color(0xFFDAAC34);
+        }
+      });
+    } else if (curTime <= 0 && sprintIndex >= sections * 2 - 1) {
+      timer?.cancel();
+    }
+  }
+
+  void stopTimer() {
+    setState(() {
+      sprintIndex = 0;
+      curTotalTime = totalTime * 60;
+      curTime = sprints[0] * 60;
+      timer?.cancel();
+      setTimerVals();
+      setPauseVals("Start timer");
+    });
+    Navigator.of(context).pop();
+  }
+
+  void restartTimer() {
+    setState(() {
+      curTotalTime -= curTime;
+
+      curTime = sprints[sprintIndex] * 60;
+      curTotalTime += sprints[sprintIndex] * 60;
+
+      timer?.cancel();
+      setTimerVals();
+      setPauseVals("Paused");
+    });
+
+    Navigator.of(context).pop();
+  }
+
+  void setTimerVals() {
+    minutes = (curTime / 60).floor();
+    seconds = curTime % 60;
+    focusPercentage = (curTime / 60) / sprints[0];
+    totalPercentage = (curTotalTime / 60) / totalTime;
+  }
+
+  void setPauseVals(String _stateText) {
+    sprintColor = const Color(0xFFDA4834);
+    stateText = _stateText;
+    timerRunning = !timerRunning;
+    playStateIcon = const Icon(
+      Icons.play_arrow_outlined,
+      size: 35,
+    );
   }
 
   @override
@@ -80,7 +214,7 @@ class _timerScreenState extends State<timerScreen> {
               child: Column(
                 children: [
                   Text(
-                    "$currentSection/$totalSections",
+                    "${((sprintIndex + 1) / 2).round()}/$sections",
                     textAlign: TextAlign.center,
                     style: const TextStyle(
                         fontFamily: "Rupert",
@@ -93,30 +227,31 @@ class _timerScreenState extends State<timerScreen> {
                     child: CircularPercentIndicator(
                       radius: 284.0,
                       lineWidth: 9.0,
-                      percent: 0.9,
+                      percent: totalPercentage,
                       backgroundColor: const Color(0xFF1A5074),
                       progressColor: const Color(0xFF20788C),
                       circularStrokeCap: CircularStrokeCap.round,
                       center: CircularPercentIndicator(
                         radius: 250,
                         lineWidth: 9,
-                        percent: 0.7,
+                        percent: focusPercentage,
                         backgroundColor: const Color(0xFF1A5074),
                         progressColor: sprintColor,
                         circularStrokeCap: CircularStrokeCap.round,
-                        center: const Text(
-                          "18:59",
+                        center: Text(
+                          "${f.format(minutes)}:${f.format(seconds)}",
                           textAlign: TextAlign.center,
-                          style: TextStyle(
+                          style: const TextStyle(
                               fontFamily: "Rupert",
                               fontWeight: FontWeight.w500,
-                              fontSize: 72,
+                              fontSize: 68,
                               color: Color(0xFFefefef)),
                         ),
                       ),
                     ),
                   ),
-                  const progressIcons(total: 8, done: 3)
+                  progressIcons(
+                      total: sections, done: ((sprintIndex + 1) / 2).round())
                 ],
               ),
             ),
@@ -128,7 +263,8 @@ class _timerScreenState extends State<timerScreen> {
               children: [
                 MaterialButton(
                   elevation: 0,
-                  onPressed: () {},
+                  onPressed: () => showAlert(
+                      context, "Restart", "Restart section", restartTimer),
                   color: const Color(0xFF0C2C41),
                   textColor: const Color(0xFF34DADA),
                   child: const Icon(
@@ -150,7 +286,8 @@ class _timerScreenState extends State<timerScreen> {
                 ),
                 MaterialButton(
                   elevation: 0,
-                  onPressed: () {},
+                  onPressed: () =>
+                      showAlert(context, "Stop", "Stop timer", stopTimer),
                   color: const Color(0xFF0C2C41),
                   textColor: const Color(0xFF34DADA),
                   child: const Icon(
@@ -168,4 +305,48 @@ class _timerScreenState extends State<timerScreen> {
       ),
     );
   }
+
+  TextStyle _alertTitle = TextStyle(
+      fontFamily: "Rupert",
+      fontWeight: FontWeight.bold,
+      fontSize: 18,
+      color: Color(0xFF91C2E3));
+  TextStyle _alertBody = TextStyle(
+      fontFamily: "Rupert",
+      fontWeight: FontWeight.w400,
+      fontSize: 16,
+      color: Color(0xFF91C2E3));
+  TextStyle _alertPrompt = TextStyle(
+      fontFamily: "Rupert",
+      fontWeight: FontWeight.bold,
+      fontSize: 16,
+      color: Color(0xFF91C2E3));
+
+  void showAlert(BuildContext context, title, content, onConfirm) => showDialog(
+      context: context,
+      builder: (_) => AlertDialog(
+            backgroundColor: Color(0xFF1A5074),
+            title: Text(
+              title,
+              style: _alertTitle,
+            ),
+            content: Text(
+              content,
+              style: _alertBody,
+            ),
+            actions: [
+              FlatButton(
+                  onPressed: onConfirm,
+                  child: Text(
+                    "Yes",
+                    style: _alertPrompt,
+                  )),
+              FlatButton(
+                  onPressed: () => Navigator.of(context).pop(),
+                  child: Text(
+                    "No",
+                    style: _alertPrompt,
+                  )),
+            ],
+          ));
 }

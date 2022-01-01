@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:pomodoro/widgets/dropDownSelector.dart';
+import 'package:pomodoro/widgets/settingSlider.dart';
 
 class settingsScreen extends StatefulWidget {
   const settingsScreen({Key? key}) : super(key: key);
@@ -9,44 +10,16 @@ class settingsScreen extends StatefulWidget {
 }
 
 class _settingsScreenState extends State<settingsScreen> {
-  final List<String> timePeriods = [
-    "1 min  ",
-    "2 min  ",
-    "3 min  ",
-    "4 min  ",
-    "5 min  ",
-    "6 min  ",
-    "7 min  ",
-    "8 min  ",
-    "9 min  ",
-    "10 min  ",
-    "11 min  ",
-    "12 min  ",
-    "13 min  ",
-    "14 min  ",
-    "15 min  ",
-    "16 min  ",
-    "17 min  ",
-    "18 min  ",
-    "19 min  ",
-    "20 min  "
-  ];
-  final List<String> sectionPeriods = [
-    "1 interval  ",
-    "2 intervals  ",
-    "3 intervals  "
-  ];
-
   final TextStyle _textStyle = const TextStyle(
       fontFamily: "Rupert",
       fontWeight: FontWeight.w500,
       fontSize: 16,
       color: Color(0xFFE5E5E5));
 
-  String? focusTime;
-  String? shortBreak;
-  String? longBreak;
-  String? sections;
+  double focusTime = 25;
+  double shortBreak = 5;
+  double longBreak = 15;
+  double sections = 4;
 
   @override
   Widget build(BuildContext context) {
@@ -76,37 +49,35 @@ class _settingsScreenState extends State<settingsScreen> {
             Expanded(
                 child: Column(
               children: [
-                dropDownSelector(
+                settingSlider(
                     label: "Focus time",
-                    itemList: timePeriods,
-                    target: focusTime,
+                    value: focusTime,
                     onChange: (value) {
                       setState(() {
                         focusTime = value;
                       });
                     }),
-                dropDownSelector(
+                settingSlider(
                     label: "Short break",
-                    itemList: timePeriods,
-                    target: shortBreak,
+                    value: shortBreak,
                     onChange: (value) {
                       setState(() {
                         shortBreak = value;
                       });
                     }),
-                dropDownSelector(
+                settingSlider(
                     label: "Long break",
-                    itemList: timePeriods,
-                    target: longBreak,
+                    value: longBreak,
                     onChange: (value) {
                       setState(() {
                         longBreak = value;
                       });
                     }),
-                dropDownSelector(
+                settingSlider(
                     label: "Sections",
-                    itemList: sectionPeriods,
-                    target: sections,
+                    units: "intervals",
+                    value: sections,
+                    max: 12,
                     onChange: (value) {
                       setState(() {
                         sections = value;
