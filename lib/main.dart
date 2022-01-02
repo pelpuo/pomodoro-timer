@@ -1,34 +1,38 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:pomodoro/screens/infoScreen.dart';
 import 'package:pomodoro/screens/settingsScreen.dart';
 import 'package:pomodoro/screens/timerScreen.dart';
+import 'package:pomodoro/providers/timer_provider.dart';
+import 'package:pomodoro/utilities/notify.dart';
+import 'package:pomodoro/utilities/persist_data.dart';
+import 'package:provider/provider.dart';
 
-void main() {
+Future main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await persistVals.init();
+  await Notify().init();
+
   runApp(const MyApp());
 }
 
 class MyApp extends StatelessWidget {
   const MyApp({Key? key}) : super(key: key);
 
-  // This widget is the root of your application.
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      debugShowCheckedModeBanner: false,
-      title: 'Pomodoro timer',
-      theme: ThemeData(
-        // This is the theme of your application.
-        //
-        // Try running your application with "flutter run". You'll see the
-        // application has a blue toolbar. Then, without quitting the app, try
-        // changing the primarySwatch below to Colors.green and then invoke
-        // "hot reload" (press "r" in the console where you ran "flutter run",
-        // or simply save your changes to "hot reload" in a Flutter IDE).
-        // Notice that the counter didn't reset back to zero; the application
-        // is not restarted.
-        primarySwatch: Colors.blue,
+    return ChangeNotifierProvider<TimerProvider>(
+      create: (context) => TimerProvider(),
+      child: Consumer<TimerProvider>(
+        builder: (context, timerProvider, child) => MaterialApp(
+          debugShowCheckedModeBanner: false,
+          title: 'Pomodoro',
+          theme: ThemeData(
+            primarySwatch: Colors.blue,
+          ),
+          home: Home(),
+        ),
       ),
-      home: const Home(),
     );
   }
 }
@@ -43,6 +47,14 @@ class Home extends StatefulWidget {
 class _HomeState extends State<Home> {
   int _currentIndex = 0;
   final screens = [timerScreen(), settingsScreen(), infoScreen()];
+
+  @override
+  void didChangeDependencies() {
+    // TODO: implement didChangeDependencies
+    super.didChangeDependencies();
+
+    Provider.of<TimerProvider>(context, listen: false).loadTimerSettings();
+  }
 
   @override
   Widget build(BuildContext context) {
